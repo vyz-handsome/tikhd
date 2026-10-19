@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- cyan offset -->
+    <path
+        android:fillColor="#FF25F4EE"
+        android:pathData="M41,30 L41,78 L79,54 Z" />
+    <!-- red offset -->
+    <path
+        android:fillColor="#FFFE2C55"
+        android:pathData="M45,30 L45,78 L83,54 Z" />
+    <!-- main white-ish triangle -->
+    <path
+        android:fillColor="#FF1B1F2A"
+        android:pathData="M43,30 L43,78 L81,54 Z" />
+</vector>
