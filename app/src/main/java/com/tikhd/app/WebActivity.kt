@@ -209,25 +209,14 @@ class WebActivity : ComponentActivity() {
                             factory = { ctx -> createWebView(ctx, isPatch).also { webView = it; it.loadUrl(url) } }
                         )
 
-                        AnimatedVisibility(
-                            visible = banner != null,
+                        BannerHost(
+                            banner = banner,
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .navigationBarsPadding()
                                 .padding(16.dp),
-                            enter = fadeIn() + slideInVertically { it },
-                            exit = fadeOut() + slideOutVertically { it }
-                        ) {
-                            GlassCard(modifier = Modifier.fillMaxWidth(), corner = 22.dp, onClick = { banner = null }) {
-                                Text(
-                                    banner ?: "",
-                                    color = Palette.Ink,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)
-                                )
-                            }
-                        }
+                            onDismiss = { banner = null }
+                        )
                     }
                 }
             }
@@ -394,5 +383,27 @@ class WebActivity : ComponentActivity() {
         }
         webView = null
         super.onDestroy()
+    }
+}
+
+
+/** Dipisah ke fungsi top-level biar AnimatedVisibility gak ketuker sama versi ColumnScope (receiver implisit dari Column). */
+@androidx.compose.runtime.Composable
+private fun BannerHost(banner: String?, modifier: Modifier, onDismiss: () -> Unit) {
+    AnimatedVisibility(
+        visible = banner != null,
+        modifier = modifier,
+        enter = fadeIn() + slideInVertically { it },
+        exit = fadeOut() + slideOutVertically { it }
+    ) {
+        GlassCard(modifier = Modifier.fillMaxWidth(), corner = 22.dp, onClick = onDismiss) {
+            Text(
+                banner ?: "",
+                color = Palette.Ink,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)
+            )
+        }
     }
 }
