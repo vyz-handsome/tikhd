@@ -183,7 +183,12 @@ fun Appear(index: Int = 0, modifier: Modifier = Modifier, content: @Composable (
 }
 
 @Composable
-fun GlassTopBar(title: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun GlassTopBar(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    actions: (@Composable () -> Unit)? = null
+) {
     Row(
         modifier
             .fillMaxWidth()
@@ -206,8 +211,11 @@ fun GlassTopBar(title: String, onBack: () -> Unit, modifier: Modifier = Modifier
             color = Palette.Ink,
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 14.dp)
+            modifier = Modifier
+                .padding(start = 14.dp)
+                .weight(1f)
         )
+        actions?.invoke()
     }
 }
 

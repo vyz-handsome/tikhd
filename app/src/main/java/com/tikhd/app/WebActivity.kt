@@ -33,6 +33,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -67,8 +71,12 @@ class WebActivity : ComponentActivity() {
         private const val PATCH_URL = "https://transcode.vague-infinity.com/"
         private const val UPLOAD_URL = "https://www.tiktok.com/tiktokstudio/upload"
 
-        private const val DESKTOP_UA =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        /** Desktop Chrome UA built from this device's real WebView version (no "wv" marker). */
+        private fun desktopChromeUa(ctx: Context): String {
+            val ver = Regex("Chrome/([\\d.]+)")
+                .find(WebSettings.getDefaultUserAgent(ctx))?.groupValues?.get(1) ?: "124.0.0.0"
+            return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$ver Safari/537.36"
+        }
 
         fun launch(ctx: Context, mode: String) {
             ctx.startActivity(Intent(ctx, WebActivity::class.java).putExtra(EXTRA_MODE, mode))
@@ -194,7 +202,20 @@ class WebActivity : ComponentActivity() {
         setContent {
             GlassBackground {
                 Column(Modifier.fillMaxSize()) {
-                    GlassTopBar(title = title, onBack = { onBackPressedDispatcher.onBackPressed() })
+                    GlassTopBar(
+                        title = title,
+                        onBack = { onBackPressedDispatcher.onBackPressed() },
+                        actions = {
+                            GlassCard(corner = 22.dp, onClick = { banner = null; webView?.reload() }, modifier = Modifier.size(44.dp)) {
+                                Icon(
+                                    Icons.Rounded.Refresh,
+                                    contentDescription = "Muat ulang",
+                                    tint = Palette.Ink,
+                                    modifier = Modifier.align(Alignment.Center).size(22.dp)
+                                )
+                            }
+                        }
+                    )
 
                     if (pageProgress in 0.01f..0.99f) {
                         GlassProgress(
@@ -236,8 +257,10 @@ class WebActivity : ComponentActivity() {
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             allowFileAccess = false
             allowContentAccess = true
+            databaseEnabled = true
+            setSupportMultipleWindows(true)
             if (!isPatch) {
-                userAgentString = DESKTOP_UA
+                userAgentString = desktopChromeUa(ctx)
                 useWideViewPort = true
                 loadWithOverviewMode = true
                 setSupportZoom(true)
@@ -263,6 +286,18 @@ class WebActivity : ComponentActivity() {
                 pageProgress = 0.05f
             }
 
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: android.webkit.WebResourceError) {
+                if (request.isForMainFrame) {
+                    banner = "Gagal memuat halaman: ${error.description}. Cek koneksi lalu tekan muat ulang."
+                }
+            }
+
+            override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: android.webkit.WebResourceResponse) {
+                if (request.isForMainFrame && errorResponse.statusCode >= 400) {
+                    banner = "Halaman membalas error ${errorResponse.statusCode}. Coba muat ulang."
+                }
+            }
+
             override fun onPageFinished(view: WebView, url: String?) {
                 pageProgress = 1f
                 CookieManager.getInstance().flush()
@@ -273,6 +308,26 @@ class WebActivity : ComponentActivity() {
         wv.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, newProgress: Int) {
                 pageProgress = newProgress / 100f
+            }
+
+            // Login / OAuth popups: load them in the same WebView instead of dropping them.
+            override fun onCreateWindow(
+                view: WebView,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: android.os.Message
+            ): Boolean {
+                val temp = WebView(view.context)
+                temp.webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(v: WebView, request: WebResourceRequest): Boolean {
+                        view.loadUrl(request.url.toString())
+                        v.destroy()
+                        return true
+                    }
+                }
+                (resultMsg.obj as WebView.WebViewTransport).webView = temp
+                resultMsg.sendToTarget()
+                return true
             }
 
             override fun onShowFileChooser(
