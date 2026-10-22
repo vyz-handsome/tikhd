@@ -163,7 +163,7 @@ fun CompressScreen(onBack: () -> Unit) {
         ) {
             Appear(0) {
                 Text(
-                    "Resolusi dan fps tidak diubah. Video dire-encode ke H.264 dengan bitrate yang lebih hemat.",
+                    "Resolusi dan fps tidak diubah. Video dire-encode ke H.264 dengan bitrate dipotong sekitar 50%.",
                     color = Palette.InkSoft,
                     fontSize = 14.sp,
                     lineHeight = 20.sp

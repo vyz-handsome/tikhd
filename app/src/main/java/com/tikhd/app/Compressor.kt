@@ -22,15 +22,16 @@ class Compressor(private val ctx: Context) {
 
     private var transformer: Transformer? = null
 
-    /** High quality but small: ~0.065 bits per pixel per frame, never above 90% of the source bitrate. */
+    /** Target = 50% of the source bitrate. Falls back to ~0.1 bit per pixel per frame if the source bitrate is unknown. */
     fun targetBitrate(info: VideoProbe.Info): Int {
-        val fps = info.fps.coerceIn(24f, 120f)
-        val pixels = (info.width.toLong() * info.height.toLong()).coerceAtLeast(1L)
-        var target = (pixels * fps * 0.065f).toLong().coerceIn(1_500_000L, 20_000_000L)
-        if (info.bitrateBps > 0) {
-            target = minOf(target, (info.bitrateBps * 0.9).toLong()).coerceAtLeast(1_500_000L)
+        val target = if (info.bitrateBps > 0) {
+            info.bitrateBps / 2
+        } else {
+            val fps = info.fps.coerceIn(24f, 120f)
+            val pixels = (info.width.toLong() * info.height.toLong()).coerceAtLeast(1L)
+            (pixels * fps * 0.1f).toLong() / 2
         }
-        return target.toInt()
+        return target.coerceIn(1_000_000L, 40_000_000L).toInt()
     }
 
     fun start(
